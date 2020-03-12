@@ -90,8 +90,10 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 	var t ipv4.ICMPType = ipv4.ICMPTypeTimeExceeded
 
 	for i := 0; i<attempts; i++ {
+		
 		// Sends ICMP Package
 		start := time.Now()
+
 		n, err := connection.WriteTo(b, destination)
 		if err != nil {
 			return []time.Duration{0}, []net.Addr{}, nil, err
@@ -102,10 +104,10 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 		// Reads from socket
 		reply = make([]byte, 1500)
 		replyLength, peer, err = connection.ReadFrom(reply)
-
 		if err != nil {
 			return []time.Duration{0}, []net.Addr{}, nil, err
 		}
+
 		duration := time.Since(start)
 
 		durationsArray = append(durationsArray,duration)
