@@ -113,7 +113,7 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 		durationsArray = append(durationsArray,duration)
 		peersArray = append(peersArray,peer)
 
-		// Parses last ICMP message
+		// Parses ICMP message
 		msg, err = icmp.ParseMessage(ProtocolIPv4ICMP, reply[:replyLength])
 		if err != nil {
 			return []time.Duration{0}, []net.Addr{}, nil, err
