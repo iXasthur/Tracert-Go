@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"time"
@@ -31,10 +30,11 @@ func hexDump(title string, data []byte) {
 		title = "DUMP"
 	}
 
+
 	title = fmt.Sprintf("%s (%d bytes)", title, len(data))
-	log.Printf("----------- %s ----------->>>", title)
-	log.Printf("\n%s", hex.Dump(data))
-	log.Printf("<<<-------- %s --------------", title)
+	fmt.Printf("----------- %s ----------->>>\n", title)
+	fmt.Printf("\n%s", hex.Dump(data))
+	fmt.Printf("<<<-------- %s --------------\n", title)
 }
 
 func buildICMP(t icmp.Type, size int) ([]byte, error) {
@@ -179,28 +179,28 @@ func ping(dest *net.IPAddr, ttl int) bool {
 		if t != nil {
 			switch *t {
 			case ipv4.ICMPTypeEchoReply:
-				log.Printf("%3d %10s     Reached  %s", ttl, durationsArray, createPeersString(peersArray))
+				fmt.Printf("%3d %13s     Reached  %s\n", ttl, durationsArray, createPeersString(peersArray))
 				return true
 			case ipv4.ICMPTypeTimeExceeded:
-				log.Printf("%3d %10s   TTLExc at  %s", ttl, durationsArray, createPeersString(peersArray))
+				fmt.Printf("%3d %13s   TTLExc at  %s\n", ttl, durationsArray, createPeersString(peersArray))
 				return false
 			default:
 				return false
 			}
 		}
 	} else {
-		log.Printf("%3d ERROR: %s", ttl, err)
+		fmt.Printf("%3d ERROR: %s\n", ttl, err)
 		return false
 	}
 	return false
 }
 
 func tracert(addr string) {
-	log.Printf("Tracing route to %s with MaxTTL = %d", addr, MaxTTL)
+	fmt.Printf("Tracing route to %s with MaxTTL = %d\n", addr, MaxTTL)
 	// Get the real IP of the target if needed
 	destination, err := net.ResolveIPAddr("ip4", addr)
 	if err != nil {
-		log.Printf("Invalid address %s", addr)
+		fmt.Printf("Invalid address %s\n", addr)
 		return
 	}
 
@@ -209,7 +209,7 @@ func tracert(addr string) {
 			break
 		}
 	}
-	log.Printf("Ended tracert")
+	fmt.Printf("Ended tracert\n")
 }
 
 func main() {
