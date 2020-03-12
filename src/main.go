@@ -21,7 +21,7 @@ const (
 	// can't import "internal" packages
 	AttemptsCount = 3
 	MaxTTL = 64
-	MaxWaitSec = 10
+	MaxWaitSec = 2
 	ProtocolIPv4ICMP = 1
 	ProtocolIPv6ICMP = 58
 )
@@ -62,7 +62,7 @@ func buildICMP(t icmp.Type, size int) ([]byte, error) {
 	return msg.Marshal(nil)
 }
 
-func Ping(addr string, b []byte, ttl int, attempts int) ([]time.Duration, []net.Addr, *ipv4.ICMPType, error) {
+func Ping(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]time.Duration, []net.Addr, *ipv4.ICMPType, error) {
 	var err error
 
 	// Creates listening socket
@@ -73,14 +73,6 @@ func Ping(addr string, b []byte, ttl int, attempts int) ([]time.Duration, []net.
 		return []time.Duration{}, []net.Addr{}, nil, err
 	}
 	defer connection.Close()
-
-	// Get the real IP of the target if needed
-	var destination *net.IPAddr
-	destination, err = net.ResolveIPAddr("ip4", addr)
-
-	if err != nil {
-		return []time.Duration{0}, []net.Addr{}, nil, err
-	}
 
 	// Configures connection
 	err = connection.SetReadDeadline(time.Now().Add(MaxWaitSec * time.Second))
@@ -148,10 +140,7 @@ func Ping(addr string, b []byte, ttl int, attempts int) ([]time.Duration, []net.
 	}
 }
 
-func ping(addr string, ttl int) bool {
-	msg, _ := buildICMP(ipv4.ICMPTypeEcho,56)
-	durationsArray, peersArray, t, err := Ping(addr, msg, ttl, AttemptsCount)
-
+func createPeersString(peersArray []net.Addr) string {
 	var peersAreIdentical bool = true
 	for i := 0; i<len(peersArray)-1; i++ {
 		if peersArray[i].String() != peersArray[i+1].String(){
@@ -159,24 +148,41 @@ func ping(addr string, ttl int) bool {
 		}
 	}
 
+	if peersAreIdentical {
+		peersArray = []net.Addr{peersArray[0]}
+	}
+
+	var buffStr string = "["
+	for i := 0; i<len(peersArray);i++ {
+		ptr, _ := net.LookupAddr(peersArray[0].String())
+		var ptrStr string = ""
+		if len(ptr)>0{
+			ptrStr = " ("
+			for j := 0; j<len(ptr); j++ {
+				ptrStr = ptrStr + ptr[j][:len(ptr[j])-1] + "  "
+			}
+			ptrStr = ptrStr[:len(ptrStr)-2]
+			ptrStr = ptrStr + ")"
+		}
+		buffStr = buffStr + peersArray[i].String() + ptrStr + "  "
+	}
+	buffStr = buffStr[:len(buffStr)-2]
+	buffStr = buffStr + "]"
+	return buffStr
+}
+
+func ping(dest *net.IPAddr, ttl int) bool {
+	msg, _ := buildICMP(ipv4.ICMPTypeEcho,56)
+	durationsArray, peersArray, t, err := Ping(dest, msg, ttl, AttemptsCount)
+
 	if err == nil {
 		if t != nil {
 			switch *t {
 			case ipv4.ICMPTypeEchoReply:
-				if peersAreIdentical {
-					ptr, _ := net.LookupAddr(peersArray[0].String())
-					log.Printf("%3d %10s    Reached %16v %v", ttl, durationsArray, peersArray[0], ptr)
-				} else {
-					log.Printf("%3d %10s    Reached %16v", ttl, durationsArray, peersArray)
-				}
+				log.Printf("%3d %10s     Reached  %s", ttl, durationsArray, createPeersString(peersArray))
 				return true
 			case ipv4.ICMPTypeTimeExceeded:
-				if peersAreIdentical {
-					ptr, _ := net.LookupAddr(peersArray[0].String())
-					log.Printf("%3d %10s  TTLExc at %16v %v", ttl, durationsArray, peersArray[0], ptr)
-				} else {
-					log.Printf("%3d %10s  TTLExc at %16v", ttl, durationsArray, peersArray)
-				}
+				log.Printf("%3d %10s   TTLExc at  %s", ttl, durationsArray, createPeersString(peersArray))
 				return false
 			default:
 				return false
@@ -191,8 +197,15 @@ func ping(addr string, ttl int) bool {
 
 func tracert(addr string) {
 	log.Printf("Tracing route to %s with MaxTTL = %d", addr, MaxTTL)
+	// Get the real IP of the target if needed
+	destination, err := net.ResolveIPAddr("ip4", addr)
+	if err != nil {
+		log.Printf("Invalid address %s", addr)
+		return
+	}
+
 	for i := 1; i <= MaxTTL; i++ {
-		if ping(addr, i) {
+		if ping(destination, i) {
 			break
 		}
 	}
