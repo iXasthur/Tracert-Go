@@ -1,8 +1,5 @@
 package main
 
-// Mostly based on https://github.com/golang/net/blob/master/icmp/ping_test.go
-// All ye beware, there be dragons below...
-
 import (
 	"bytes"
 	"encoding/hex"
@@ -16,11 +13,11 @@ import (
 )
 
 const (
-	// From https://godoc.org/golang.org/x/net/internal/iana,
-	// can't import "internal" packages
 	AttemptsCount = 3
 	MaxTTL = 64
 	MaxWaitSec = 2
+
+	// From https://godoc.org/golang.org/x/net/internal/iana
 	ProtocolIPv4ICMP = 1
 	ProtocolIPv6ICMP = 58
 )
@@ -68,7 +65,6 @@ func Ping(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]time.Dura
 	// Creates listening socket
 	var connection net.PacketConn
 	connection, err = net.ListenPacket("ip4:icmp", "0.0.0.0")
-
 	if err != nil {
 		return []time.Duration{}, []net.Addr{}, nil, err
 	}
