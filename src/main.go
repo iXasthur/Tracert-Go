@@ -59,7 +59,7 @@ func buildICMP(t icmp.Type, size int) ([]byte, error) {
 	return msg.Marshal(nil)
 }
 
-func Ping(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]time.Duration, []net.Addr, *ipv4.ICMPType, error) {
+func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]time.Duration, []net.Addr, *ipv4.ICMPType, error) {
 	var err error
 
 	// Creates listening socket
@@ -169,7 +169,7 @@ func createPeersString(peersArray []net.Addr) string {
 
 func ping(dest *net.IPAddr, ttl int) bool {
 	msg, _ := buildICMP(ipv4.ICMPTypeEcho,56)
-	durationsArray, peersArray, t, err := Ping(dest, msg, ttl, AttemptsCount)
+	durationsArray, peersArray, t, err := socExchange(dest, msg, ttl, AttemptsCount)
 
 	if err == nil {
 		if t != nil {
