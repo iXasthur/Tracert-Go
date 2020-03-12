@@ -7,12 +7,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/net/icmp"
-	"golang.org/x/net/ipv4"
 	"log"
 	"net"
 	"os"
 	"time"
+
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
 
 const (
