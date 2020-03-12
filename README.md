@@ -1,2 +1,2 @@
-# Traceroute-Go
-# Traceroute written in Go
+# Tracert-Go
+# Tracert written in Go
