@@ -1,2 +1,2 @@
 # Tracert-Go
-# Tracert written in Go
+# Tracert written in Go (ICMP protocol)

@@ -15,7 +15,8 @@ import (
 const (
 	AttemptsCount = 3
 	MaxTTL = 64
-	MaxWaitSec = 2
+	MaxWaitSec = 4
+	MsgLength = 56
 
 	// From https://godoc.org/golang.org/x/net/internal/iana
 	ProtocolIPv4ICMP = 1
@@ -29,7 +30,7 @@ func hexDump(title string, data []byte) {
 
 
 	title = fmt.Sprintf("%s (%d bytes)", title, len(data))
-	fmt.Printf("----------- %s ----------->>>\n", title)
+	fmt.Printf("----------- %s ----------->>>", title)
 	fmt.Printf("\n%s", hex.Dump(data))
 	fmt.Printf("<<<-------- %s --------------\n", title)
 }
@@ -37,7 +38,7 @@ func hexDump(title string, data []byte) {
 func buildICMP(t icmp.Type, size int) ([]byte, error) {
 	var buf bytes.Buffer
 
-	template := []byte("iXasthurICMP!")
+	template := []byte("ICMP!")
 	for count := size / len(template); count > 0; count-- {
 		buf.Write(template)
 	}
@@ -90,7 +91,11 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 	var t ipv4.ICMPType = ipv4.ICMPTypeTimeExceeded
 
 	for i := 0; i<attempts; i++ {
-		
+
+		//fmt.Print("\n")
+		//var dumpTitle = strconv.Itoa(i+1) + ": ICMP TO BE SENT TTL = " + strconv.Itoa(ttl)
+		//hexDump(dumpTitle, b)
+
 		// Sends ICMP Package
 		start := time.Now()
 
@@ -108,6 +113,10 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 			return []time.Duration{0}, []net.Addr{}, nil, err
 		}
 
+		//fmt.Print("\n")
+		//dumpTitle = strconv.Itoa(i+1) + ": ICMP REPLY"
+		//hexDump(dumpTitle, reply[:replyLength])
+
 		duration := time.Since(start)
 
 		durationsArray = append(durationsArray,duration)
@@ -119,6 +128,7 @@ func socExchange(destination *net.IPAddr, b []byte, ttl int, attempts int) ([]ti
 			return []time.Duration{0}, []net.Addr{}, nil, err
 		}
 
+		//hexDump("", reply[:replyLength])
 		if msg.Type == ipv4.ICMPTypeEchoReply {
 			t = ipv4.ICMPTypeEchoReply
 		}
@@ -170,7 +180,7 @@ func createPeersString(peersArray []net.Addr) string {
 }
 
 func ping(dest *net.IPAddr, ttl int) bool {
-	msg, _ := buildICMP(ipv4.ICMPTypeEcho,56)
+	msg, _ := buildICMP(ipv4.ICMPTypeEcho,MsgLength)
 	durationsArray, peersArray, t, err := socExchange(dest, msg, ttl, AttemptsCount)
 
 	if err == nil {
@@ -207,9 +217,15 @@ func tracert(addr string) {
 			break
 		}
 	}
+
 	fmt.Printf("Ended tracert\n")
 }
 
 func main() {
-	tracert("8.8.8.8")
+	if len(os.Args) == 2 {
+		var input string = os.Args[1]
+		tracert(input)
+	} else {
+		fmt.Printf("Usage: 1 param - address\n")
+	}
 }
